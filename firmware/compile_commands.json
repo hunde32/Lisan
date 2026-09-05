@@ -1,0 +1,20 @@
+[
+  {
+    "file": "src/main.c",
+    "arguments": [
+      "/usr/bin/avr-gcc",
+      "-Wall",
+      "-g",
+      "-Os",
+      "-mmcu=atmega32",
+      "-DF_CPU=16000000UL",
+      "-Iinc",
+      "-c",
+      "-o",
+      "src/main.o",
+      "src/main.c"
+    ],
+    "directory": "/home/hunde/Documents/Projects/Lisan/firmware",
+    "output": "src/main.o"
+  }
+]
