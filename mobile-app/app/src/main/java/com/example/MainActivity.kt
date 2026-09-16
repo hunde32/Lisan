@@ -16,6 +16,7 @@ import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
@@ -50,9 +51,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            val isDarkTheme by viewModel.isDarkTheme.collectAsStateWithLifecycle()
+            val selectedTheme by viewModel.selectedTheme.collectAsStateWithLifecycle()
             
-            MyApplicationTheme(darkTheme = isDarkTheme) {
+            MyApplicationTheme(selectedTheme = selectedTheme) {
                 MainAppScreen(viewModel)
             }
         }
@@ -89,8 +90,8 @@ fun MainAppScreen(viewModel: MainViewModel) {
         bottomBar = {
             NavigationBar(
                 modifier = Modifier.navigationBarsPadding(),
-                containerColor = Color.Black.copy(alpha = 0.8f),
-                contentColor = Color.White
+                containerColor = MaterialTheme.colorScheme.surface,
+                contentColor = MaterialTheme.colorScheme.onSurface
             ) {
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
                 val currentDestination = navBackStackEntry?.destination
@@ -103,11 +104,11 @@ fun MainAppScreen(viewModel: MainViewModel) {
                         label = { Text(translatedLabel, fontSize = 10.sp, fontWeight = FontWeight.Bold) },
                         selected = selected,
                         colors = androidx.compose.material3.NavigationBarItemDefaults.colors(
-                            selectedIconColor = Color.Black,
-                            selectedTextColor = Color.White,
-                            indicatorColor = Color.White,
-                            unselectedIconColor = Color.White.copy(alpha = 0.4f),
-                            unselectedTextColor = Color.White.copy(alpha = 0.4f)
+                            selectedIconColor = MaterialTheme.colorScheme.primary,
+                            selectedTextColor = MaterialTheme.colorScheme.primary,
+                            indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                         ),
                         onClick = {
                             navController.navigate(route) {

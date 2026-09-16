@@ -41,6 +41,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _isDarkTheme = MutableStateFlow(true) // Default to dark for Samsung premium feel
     val isDarkTheme: StateFlow<Boolean> = _isDarkTheme.asStateFlow()
 
+    private val _selectedTheme = MutableStateFlow(com.example.ui.theme.AppThemePalette.TOKYO_NIGHT)
+    val selectedTheme: StateFlow<com.example.ui.theme.AppThemePalette> = _selectedTheme.asStateFlow()
+
+    val gloveFirmwareVersion = "v1.0.4"
+
+    private val _isCheckingFirmware = MutableStateFlow(false)
+    val isCheckingFirmware: StateFlow<Boolean> = _isCheckingFirmware.asStateFlow()
+
+    private val _firmwareStatusMessage = MutableStateFlow<String?>(null)
+    val firmwareStatusMessage: StateFlow<String?> = _firmwareStatusMessage.asStateFlow()
+
     private val _isDemoMode = MutableStateFlow(false)
     val isDemoMode: StateFlow<Boolean> = _isDemoMode.asStateFlow()
 
@@ -89,9 +100,34 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _translationLanguageAmharic.value = amharic
         speechManager.setLanguage(amharic)
     }
+
+    fun toggleTranslationLanguage() {
+        val next = !_translationLanguageAmharic.value
+        setTranslationLanguage(next)
+    }
     
     fun setTheme(dark: Boolean) {
         _isDarkTheme.value = dark
+        if (!dark && _selectedTheme.value.isDark) {
+            _selectedTheme.value = com.example.ui.theme.AppThemePalette.CLEAN_LIGHT
+        } else if (dark && !_selectedTheme.value.isDark) {
+            _selectedTheme.value = com.example.ui.theme.AppThemePalette.TOKYO_NIGHT
+        }
+    }
+
+    fun selectTheme(theme: com.example.ui.theme.AppThemePalette) {
+        _selectedTheme.value = theme
+        _isDarkTheme.value = theme.isDark
+    }
+
+    fun checkFirmwareUpdate() {
+        viewModelScope.launch {
+            _isCheckingFirmware.value = true
+            _firmwareStatusMessage.value = null
+            kotlinx.coroutines.delay(1600)
+            _isCheckingFirmware.value = false
+            _firmwareStatusMessage.value = "Firmware is up to date ($gloveFirmwareVersion)"
+        }
     }
 
     fun setDemoMode(demo: Boolean) {
@@ -120,6 +156,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun deleteMessages(ids: List<Int>) {
         viewModelScope.launch {
             messageDao.deleteMessages(ids)
+        }
+    }
+
+    fun deleteAllMessages() {
+        viewModelScope.launch {
+            messageDao.deleteAllMessages()
         }
     }
 

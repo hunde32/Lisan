@@ -1,51 +1,77 @@
 package com.example.ui.theme
 
-import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.Color
 
-private val DarkColorScheme = darkColorScheme(
-    primary = White,
-    onPrimary = Black,
-    secondary = GreenAccent,
-    background = Black,
-    surface = DarkCardBg,
-    surfaceVariant = DarkBubbleBg,
-    onBackground = White,
-    onSurface = White,
-    onSurfaceVariant = DarkMuted
-)
-
-private val LightColorScheme = lightColorScheme(
-    primary = Black,
-    onPrimary = White,
-    secondary = Accent,
-    background = LightBackground,
-    surface = LightCardBg,
-    surfaceVariant = LightBubbleBg,
-    onBackground = Black,
-    onSurface = Black,
-    onSurfaceVariant = LightMuted
-)
+fun AppThemePalette.toColorScheme(): ColorScheme {
+    return if (isDark) {
+        darkColorScheme(
+            primary = primary,
+            onPrimary = onPrimary,
+            primaryContainer = surfaceVariant,
+            onPrimaryContainer = text,
+            secondary = primary,
+            onSecondary = onPrimary,
+            secondaryContainer = surfaceVariant,
+            onSecondaryContainer = text,
+            tertiary = primary,
+            onTertiary = onPrimary,
+            background = bg,
+            surface = surface,
+            surfaceVariant = surfaceVariant,
+            onBackground = text,
+            onSurface = text,
+            onSurfaceVariant = textMuted,
+            outline = border,
+            outlineVariant = border.copy(alpha = 0.5f)
+        )
+    } else {
+        lightColorScheme(
+            primary = primary,
+            onPrimary = onPrimary,
+            primaryContainer = surfaceVariant,
+            onPrimaryContainer = text,
+            secondary = primary,
+            onSecondary = onPrimary,
+            secondaryContainer = surfaceVariant,
+            onSecondaryContainer = text,
+            tertiary = primary,
+            onTertiary = onPrimary,
+            background = bg,
+            surface = surface,
+            surfaceVariant = surfaceVariant,
+            onBackground = text,
+            onSurface = text,
+            onSurfaceVariant = textMuted,
+            outline = border,
+            outlineVariant = border.copy(alpha = 0.5f)
+        )
+    }
+}
 
 @Composable
 fun MyApplicationTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(), // Fallback to system theme if not explicitly set
+    selectedTheme: AppThemePalette = AppThemePalette.TOKYO_NIGHT,
+    darkTheme: Boolean = selectedTheme.isDark,
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit,
 ) {
-    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+    val activePalette = if (!darkTheme && selectedTheme.isDark) {
+        AppThemePalette.CLEAN_LIGHT
+    } else {
+        selectedTheme
+    }
 
     MaterialTheme(
-        colorScheme = colorScheme,
+        colorScheme = activePalette.toColorScheme(),
         typography = Typography,
         shapes = Shapes,
         content = content
     )
 }
+

@@ -40,7 +40,25 @@ val translations = mapOf(
     "Connected to HC-05" to "ከ HC-05 ጋር ተገናኝቷል",
     "Tap to connect" to "ለማገናኘት ይጫኑ",
     "No conversations yet." to "እስካሁን ምንም ውይይቶች የሉም።",
-    "messages" to "መልዕክቶች"
+    "messages" to "መልዕክቶች",
+    "Selected" to "የተመረጡ",
+    "Select All" to "ሁሉንም ምረጥ",
+    "Deselect All" to "ምርጫን አጽዳ",
+    "Delete" to "ሰርዝ",
+    "Delete Selected" to "የተመረጡትን ሰርዝ",
+    "Cancel" to "ተመለስ",
+    "Clear All" to "ሁሉንም አጽዳ",
+    "Long press to select" to "ለመምረጥ ተጭነው ይያዙ",
+    "Hold message to select & delete" to "ለመምረጥ እና ለመሰረዝ መልዕክቱን ተጭነው ይያዙ",
+    "No messages yet" to "እስካሁን ምንም መልዕክቶች የሉም",
+    "Wear glove or tap mic to start" to "ጓንቱን ይልበሱ ወይም ማይክሮፎኑን ይጫኑ",
+    "Hardware Telemetry" to "የሃርድዌር መረጃ",
+    "Flex Sensors" to "የተለዋዋጭነት ዳሳሾች",
+    "Motion & IMU" to "የእንቅስቃሴ ዳሳሽ",
+    "Signal Quality" to "የሲግናል ጥራት",
+    "Hardware" to "ሃርድዌር",
+    "Disconnected" to "አልተገናኘም",
+    "Connected" to "ተገናኝቷል"
 )
 
 fun String.tr(isAmharic: Boolean): String {
