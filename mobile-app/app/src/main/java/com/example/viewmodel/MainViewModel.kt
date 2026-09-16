@@ -7,6 +7,7 @@ import com.example.data.AppDatabase
 import com.example.data.MessageEntity
 import com.example.managers.GloveBluetoothManager
 import com.example.managers.SpeechManager
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -56,12 +57,28 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val isDemoMode: StateFlow<Boolean> = _isDemoMode.asStateFlow()
 
     private var activeMessageId: Int? = null
+    private var accumulatedBubbleText: String = ""
+    private var lastSpeechTimestamp: Long = 0L
+    private var silenceJob: Job? = null
+    private val recentGloveTexts = mutableListOf<String>()
+    private var lastGloveSpokenTime = 0L
+
+    private fun registerGloveMessage(text: String) {
+        lastGloveSpokenTime = System.currentTimeMillis()
+        speechManager.registerGloveSpokenText(text)
+        val norm = text.lowercase().replace(Regex("[.,?!:;።፣፤፧፡\\-_]"), " ").trim()
+        if (norm.isNotEmpty()) {
+            recentGloveTexts.add(norm)
+            if (recentGloveTexts.size > 15) recentGloveTexts.removeAt(0)
+        }
+    }
 
     init {
         // Listen to Glove Bluetooth messages
         viewModelScope.launch {
             bluetoothManager.receivedText.collect { text ->
                 if (text.isNotBlank()) {
+                    registerGloveMessage(text)
                     // Save to DB
                     messageDao.insertMessage(MessageEntity(text = text, isFromGlove = true))
                     // Speak it
@@ -73,23 +90,90 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         // Listen to Speech Recognizer messages
         viewModelScope.launch {
             speechManager.speechResult.collect { result ->
-                if (result.text.isBlank()) return@collect
-                
-                val now = System.currentTimeMillis()
-                val isNewMessage = activeMessageId == null
+                val trimmedText = result.text.trim()
+                if (trimmedText.isBlank()) return@collect
 
+                // Strict echo filter: prevent any speech the glove spoke from showing as user chat bubble
+                if (speechManager.isGloveEcho(trimmedText)) {
+                    return@collect
+                }
+                val cleanText = trimmedText.lowercase().replace(Regex("[.,?!:;።፣፤፧፡\\-_]"), " ").trim()
+                if (recentGloveTexts.any { it.contains(cleanText) || cleanText.contains(it) }) {
+                    return@collect
+                }
+
+                val now = System.currentTimeMillis()
+
+                // If user stopped talking for >= 5 seconds (5000ms), start in a brand new bubble
+                if (lastSpeechTimestamp > 0L && (now - lastSpeechTimestamp) >= 5000L) {
+                    activeMessageId = null
+                    accumulatedBubbleText = ""
+                }
+                lastSpeechTimestamp = now
+                silenceJob?.cancel()
+
+                val combinedText = if (accumulatedBubbleText.isNotEmpty()) {
+                    "$accumulatedBubbleText $trimmedText"
+                } else {
+                    trimmedText
+                }
+
+                val isNewMessage = (activeMessageId == null)
                 if (isNewMessage) {
-                    val newId = messageDao.insertMessage(MessageEntity(text = result.text, isFromGlove = false, timestamp = now))
+                    val newId = messageDao.insertMessage(
+                        MessageEntity(
+                            text = combinedText,
+                            isFromGlove = false,
+                            timestamp = now
+                        )
+                    )
                     activeMessageId = newId.toInt()
                 } else {
-                    messageDao.updateMessage(MessageEntity(id = activeMessageId!!, text = result.text, isFromGlove = false, timestamp = now))
+                    messageDao.updateMessage(
+                        MessageEntity(
+                            id = activeMessageId!!,
+                            text = combinedText,
+                            isFromGlove = false,
+                            timestamp = now
+                        )
+                    )
                 }
-                
+
                 if (result.isFinal) {
-                    activeMessageId = null
+                    accumulatedBubbleText = combinedText
+                    // Countdown 5 seconds of silence: if no speech arrives within 5 seconds,
+                    // finalize this bubble so the next phrase begins in a new bubble
+                    silenceJob = viewModelScope.launch {
+                        kotlinx.coroutines.delay(5000L)
+                        activeMessageId = null
+                        accumulatedBubbleText = ""
+                    }
                 }
             }
         }
+    }
+
+    fun toggleListening() {
+        if (speechManager.isListening.value) {
+            stopListening()
+        } else {
+            startListening()
+        }
+    }
+
+    fun startListening() {
+        silenceJob?.cancel()
+        activeMessageId = null
+        accumulatedBubbleText = ""
+        lastSpeechTimestamp = 0L
+        speechManager.startListening()
+    }
+
+    fun stopListening() {
+        silenceJob?.cancel()
+        activeMessageId = null
+        accumulatedBubbleText = ""
+        speechManager.stopListening()
     }
 
     fun setUiLanguage(amharic: Boolean) {
@@ -143,6 +227,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 listOf("Hello, how are you?", "The weather is very nice today.", "My name is Lisan.", "Great job!")
             }
             val text = texts.random()
+            registerGloveMessage(text)
             kotlinx.coroutines.delay(1000)
             messageDao.insertMessage(MessageEntity(text = text, isFromGlove = true))
             speechManager.speak(text)
@@ -167,6 +252,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     override fun onCleared() {
         super.onCleared()
+        silenceJob?.cancel()
         speechManager.destroy()
         bluetoothManager.disconnect()
     }

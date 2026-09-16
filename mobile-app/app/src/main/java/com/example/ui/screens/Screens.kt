@@ -406,14 +406,7 @@ fun LiveTranslatorScreen(viewModel: MainViewModel) {
                 ttsAmharic = ttsAmharic,
                 onToggleLanguage = { viewModel.toggleTranslationLanguage() },
                 onMicToggle = {
-                    if (isListening) {
-                        viewModel.speechManager.stopListening()
-                    } else {
-                        viewModel.speechManager.startListening()
-                        if (isDemoMode) {
-                            viewModel.simulateGloveMessage()
-                        }
-                    }
+                    viewModel.toggleListening()
                 },
                 onSimulateGlove = {
                     viewModel.simulateGloveMessage()
