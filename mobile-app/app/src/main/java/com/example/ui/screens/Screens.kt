@@ -73,12 +73,16 @@ fun LiveTranslatorScreen(viewModel: MainViewModel) {
 
     var isSelectionMode by remember { mutableStateOf(false) }
     var selectedMessageIds by remember { mutableStateOf(setOf<Int>()) }
+    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
 
     // Auto-exit selection mode if no messages remain or all deselected
     LaunchedEffect(messages.size) {
         if (messages.isEmpty()) {
             isSelectionMode = false
             selectedMessageIds = emptySet()
+        } else {
+            // Automatically scroll down to the newest incoming message
+            listState.animateScrollToItem(messages.size - 1)
         }
     }
 
@@ -194,7 +198,7 @@ fun LiveTranslatorScreen(viewModel: MainViewModel) {
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
                                 text = when {
-                                    isConnected -> "GLOVE ${latency}ms".tr(uiAmharic)
+                                    isConnected -> "${"GLOVE".tr(uiAmharic)} ${latency}ms"
                                     isDemoMode -> "DEMO".tr(uiAmharic)
                                     else -> "OFFLINE".tr(uiAmharic)
                                 },
@@ -310,13 +314,13 @@ fun LiveTranslatorScreen(viewModel: MainViewModel) {
                 }
             } else {
                 LazyColumn(
+                    state = listState,
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(horizontal = 16.dp),
-                    contentPadding = PaddingValues(top = 12.dp, bottom = 140.dp),
-                    reverseLayout = true
+                    contentPadding = PaddingValues(top = 12.dp, bottom = 140.dp)
                 ) {
-                    items(messages.reversed(), key = { it.id }) { msg ->
+                    items(messages, key = { it.id }) { msg ->
                         val isSelected = selectedMessageIds.contains(msg.id)
 
                         Row(
@@ -520,7 +524,7 @@ fun ModernChatBubble(
                         ) {
                             Icon(
                                 imageVector = Icons.Outlined.VolumeUp,
-                                contentDescription = "Play",
+                                contentDescription = "Play".tr(uiAmharic),
                                 tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(16.dp)
                             )
@@ -551,14 +555,14 @@ fun FloatingControlDeck(
         shape = RoundedCornerShape(28.dp),
         color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        shadowElevation = 12.dp
+        shadowElevation = 10.dp
     ) {
         Row(
             modifier = Modifier
-                .padding(horizontal = 16.dp, vertical = 10.dp)
+                .padding(horizontal = 12.dp, vertical = 8.dp)
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             // Interactive Language Pair Pill (Tapping toggles translation direction)
             Row(
@@ -566,17 +570,17 @@ fun FloatingControlDeck(
                     .clip(RoundedCornerShape(16.dp))
                     .background(MaterialTheme.colorScheme.surfaceVariant)
                     .clickable { onToggleLanguage() }
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                    .padding(horizontal = 10.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 if (!ttsAmharic) {
                     Text("EN", fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.primary)
                     Icon(
                         Icons.Outlined.SwapHoriz,
-                        contentDescription = "Switch translation direction",
+                        contentDescription = "Switch translation direction".tr(uiAmharic),
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier
-                            .padding(horizontal = 4.dp)
+                            .padding(horizontal = 2.dp)
                             .size(16.dp)
                     )
                     Text("አማ", fontSize = 12.sp, fontWeight = FontWeight.Normal, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -584,21 +588,21 @@ fun FloatingControlDeck(
                     Text("አማ", fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.primary)
                     Icon(
                         Icons.Outlined.SwapHoriz,
-                        contentDescription = "Switch translation direction",
+                        contentDescription = "Switch translation direction".tr(uiAmharic),
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier
-                            .padding(horizontal = 4.dp)
+                            .padding(horizontal = 2.dp)
                             .size(16.dp)
                     )
                     Text("EN", fontSize = 12.sp, fontWeight = FontWeight.Normal, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
 
-            // Primary Interactive Mic Button
+            // Primary Interactive Mic Button - uses weight(1f) to flexibly fill center space without overlap
             val pulseTransition = rememberInfiniteTransition(label = "pulse")
             val pulseScale by pulseTransition.animateFloat(
                 initialValue = 1f,
-                targetValue = if (isListening) 1.18f else 1f,
+                targetValue = if (isListening) 1.15f else 1f,
                 animationSpec = infiniteRepeatable(
                     animation = tween(700, easing = FastOutSlowInEasing),
                     repeatMode = RepeatMode.Reverse
@@ -608,20 +612,22 @@ fun FloatingControlDeck(
 
             Row(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(24.dp))
+                    .weight(1f)
+                    .clip(RoundedCornerShape(22.dp))
                     .background(
                         if (isListening) MaterialTheme.colorScheme.primary
                         else MaterialTheme.colorScheme.surfaceVariant
                     )
                     .clickable { onMicToggle() }
-                    .padding(horizontal = 20.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     if (isListening) {
                         Box(
                             modifier = Modifier
-                                .size(24.dp)
+                                .size(22.dp)
                                 .scale(pulseScale)
                                 .background(MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.25f), CircleShape)
                         )
@@ -630,39 +636,39 @@ fun FloatingControlDeck(
                         imageVector = if (isListening) Icons.Filled.GraphicEq else Icons.Outlined.Mic,
                         contentDescription = null,
                         tint = if (isListening) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(18.dp)
                     )
                 }
 
-                Spacer(modifier = Modifier.width(10.dp))
+                Spacer(modifier = Modifier.width(6.dp))
 
                 Text(
-                    text = if (isListening) "STT LISTENING...".tr(uiAmharic) else "TAP TO LISTEN".tr(uiAmharic),
+                    text = if (isListening) "Listening...".tr(uiAmharic) else "Listen".tr(uiAmharic),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     color = if (isListening) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
-                    letterSpacing = 0.5.sp
+                    letterSpacing = 0.3.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
 
-            // Demo trigger button if demo mode is enabled
+            // Demo trigger button (robot icon) with protected touch target
             if (isDemoMode) {
                 IconButton(
                     onClick = onSimulateGlove,
                     modifier = Modifier
-                        .size(40.dp)
+                        .size(38.dp)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.surfaceVariant)
                 ) {
                     Icon(
                         Icons.Outlined.SmartToy,
-                        contentDescription = "Simulate",
+                        contentDescription = "Simulate Glove".tr(uiAmharic),
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(20.dp)
                     )
                 }
-            } else {
-                Spacer(modifier = Modifier.width(40.dp))
             }
         }
     }
@@ -714,7 +720,7 @@ fun ConversationsScreen(viewModel: MainViewModel) {
                         } else {
                             Column {
                                 Text(
-                                    text = selectedDate ?: "",
+                                    text = (selectedDate ?: "").tr(uiAmharic),
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 20.sp
                                 )
@@ -736,7 +742,7 @@ fun ConversationsScreen(viewModel: MainViewModel) {
                             }
                         } else {
                             IconButton(onClick = { selectedDate = null }) {
-                                Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                                Icon(Icons.Outlined.ArrowBack, contentDescription = "Back".tr(uiAmharic))
                             }
                         }
                     },
@@ -919,7 +925,7 @@ fun ConversationsScreen(viewModel: MainViewModel) {
                                 AlertDialog(
                                     onDismissRequest = { showConfirmDialog = false },
                                     title = { Text("Clear All".tr(uiAmharic)) },
-                                    text = { Text("Are you sure you want to delete all saved conversations?") },
+                                    text = { Text("Are you sure you want to delete all saved conversations?".tr(uiAmharic)) },
                                     confirmButton = {
                                         TextButton(onClick = {
                                             viewModel.deleteAllMessages()
@@ -1017,7 +1023,7 @@ fun ConversationsScreen(viewModel: MainViewModel) {
 
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(
-                                            text = dateStr,
+                                            text = dateStr.tr(uiAmharic),
                                             fontSize = 17.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = MaterialTheme.colorScheme.onSurface
@@ -1145,7 +1151,7 @@ fun GloveStatusScreen(viewModel: MainViewModel) {
                             Spacer(modifier = Modifier.width(14.dp))
                             Column {
                                 Text(
-                                    text = "EthioGlove SPP",
+                                    text = "EthioGlove SPP".tr(uiAmharic),
                                     fontSize = 18.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurface
@@ -1269,7 +1275,7 @@ fun GloveStatusScreen(viewModel: MainViewModel) {
                                     color = MaterialTheme.colorScheme.primary
                                 )
                                 Text(
-                                    text = "PING",
+                                    text = "PING".tr(uiAmharic),
                                     fontSize = 10.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -1331,7 +1337,7 @@ fun GloveStatusScreen(viewModel: MainViewModel) {
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Text(
-                                    text = "Version: $gloveFirmwareVersion".tr(uiAmharic),
+                                    text = "${"Version".tr(uiAmharic)}: $gloveFirmwareVersion",
                                     fontSize = 13.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -1383,7 +1389,7 @@ fun GloveStatusScreen(viewModel: MainViewModel) {
                             )
                             Spacer(modifier = Modifier.width(10.dp))
                             Text(
-                                text = status.tr(uiAmharic),
+                                text = "${status.tr(uiAmharic)} ($gloveFirmwareVersion)",
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Medium,
                                 color = MaterialTheme.colorScheme.onSurface
@@ -1608,7 +1614,7 @@ fun SettingsScreen(viewModel: MainViewModel) {
                                     ) {
                                         Icon(
                                             imageVector = Icons.Filled.Check,
-                                            contentDescription = "Selected",
+                                            contentDescription = "Selected".tr(uiAmharic),
                                             tint = MaterialTheme.colorScheme.onPrimary,
                                             modifier = Modifier.size(16.dp)
                                         )
@@ -1840,7 +1846,7 @@ fun SettingsScreen(viewModel: MainViewModel) {
                     AlertDialog(
                         onDismissRequest = { showClearConfirm = false },
                         title = { Text("Clear All Conversations".tr(uiAmharic)) },
-                        text = { Text("This will permanently delete all conversation records from your local database.") },
+                        text = { Text("This will permanently delete all conversation records from your local database.".tr(uiAmharic)) },
                         confirmButton = {
                             TextButton(onClick = {
                                 viewModel.deleteAllMessages()

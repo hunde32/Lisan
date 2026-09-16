@@ -115,6 +115,19 @@ enum class AppThemePalette(
         textMuted = Color(0xFF6B7280),
         border = Color(0xFFE5E7EB),
         isDark = false
+    ),
+
+    // 9. Classic Black & White (Pure black background, stark white text & accents)
+    MONOCHROME(
+        bg = Color(0xFF000000),
+        surface = Color(0xFF111111),
+        surfaceVariant = Color(0xFF222222),
+        primary = Color(0xFFFFFFFF),
+        onPrimary = Color(0xFF000000),
+        text = Color(0xFFFFFFFF),
+        textMuted = Color(0xFFAAAAAA),
+        border = Color(0xFF333333),
+        isDark = true
     )
 }
 

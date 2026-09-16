@@ -126,7 +126,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             _firmwareStatusMessage.value = null
             kotlinx.coroutines.delay(1600)
             _isCheckingFirmware.value = false
-            _firmwareStatusMessage.value = "Firmware is up to date ($gloveFirmwareVersion)"
+            _firmwareStatusMessage.value = "Firmware is up to date"
         }
     }
 
