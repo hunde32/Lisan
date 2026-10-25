@@ -1,4 +1,4 @@
-i #include<avr / io.h>
+#include <avr/io.h>
 #include "adc.h"
 #include "mpu6050.h"
 #include "uart.h"
