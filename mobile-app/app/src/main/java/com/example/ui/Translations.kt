@@ -115,7 +115,35 @@ val translations = mapOf(
     "Simulate glove without physical board" to "ያለ አካላዊ ሰሌዳ ጓንትን ያስመስሉ",
     "Simulate glove when listening" to "ሲያዳምጡ ጓንትን ያስመስሉ",
     "Dark Theme" to "ጨለማ ገጽታ",
-    "Use high-contrast dark mode" to "ከፍተኛ ንፅፅር ጥቁር ገጽታ ይጠቀሙ"
+    "Use high-contrast dark mode" to "ከፍተኛ ንፅፅር ጥቁር ገጽታ ይጠቀሙ",
+
+    // Glove Gestures (Model Classes 1-26)
+    "Victory" to "ድል",
+    "Come here" to "ና ወደዚህ",
+    "Okay" to "እሺ",
+    "Stop" to "ቁም",
+    "You" to "አንተ",
+    "Hope" to "ተስፋ",
+    "Failure" to "ውድቀት",
+    "Really" to "በእውነት",
+    "Quote" to "ጥቅስ",
+    "No" to "አይደለም",
+    "I Love You" to "እወድሃለሁ",
+    "Live Long" to "ረጅም እድሜ",
+    "That's It" to "ያ ብቻ ነው",
+    "Solidarity" to "አብሮነት",
+    "Rock On" to "በርታ",
+    "Good Bye" to "ደህና ሁን",
+    "What is wrong" to "ምን ተፈጠረ?",
+    "Why" to "ለምን?",
+    "Restroom" to "መታጠቢያ ቤት",
+    "Gesture 20" to "ምልክት 20",
+    "Gesture 21" to "ምልክት 21",
+    "Gesture 22" to "ምልክት 22",
+    "Gesture 23" to "ምልክት 23",
+    "Gesture 24" to "ምልክት 24",
+    "Gesture 25" to "ምልክት 25",
+    "Gesture 26" to "ምልክት 26"
 )
 
 fun String.tr(isAmharic: Boolean): String {

@@ -1,3 +1,5 @@
+export PATH := $(HOME)/.local/bin:$(PATH)
+
 MCU = atmega32
 F_CPU = 16000000UL
 BAUD = 9600

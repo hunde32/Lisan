@@ -6,7 +6,9 @@ import androidx.lifecycle.viewModelScope
 import com.example.data.AppDatabase
 import com.example.data.MessageEntity
 import com.example.managers.GloveBluetoothManager
+import com.example.managers.GloveGestureClassifier
 import com.example.managers.SpeechManager
+import com.example.ui.tr
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -32,6 +34,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     val speechManager = SpeechManager(application)
     val bluetoothManager = GloveBluetoothManager(application, viewModelScope)
+    val gestureClassifier = GloveGestureClassifier(application)
 
     private val _uiLanguageAmharic = MutableStateFlow(false)
     val uiLanguageAmharic: StateFlow<Boolean> = _uiLanguageAmharic.asStateFlow()
@@ -78,11 +81,25 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             bluetoothManager.receivedText.collect { text ->
                 if (text.isNotBlank()) {
-                    registerGloveMessage(text)
-                    // Save to DB
-                    messageDao.insertMessage(MessageEntity(text = text, isFromGlove = true))
-                    // Speak it
-                    speechManager.speak(text)
+                    val rawFeatures = gestureClassifier.parseTelemetry(text)
+                    if (rawFeatures != null) {
+                        // Incoming text is raw glove sensor telemetry (e.g. 512,520,530,510,500,1024,-2048,16000)
+                        val gestureResult = gestureClassifier.processStreamingTelemetry(text)
+                        if (gestureResult != null) {
+                            val isAmharic = _translationLanguageAmharic.value
+                            val translated = gestureResult.label.tr(isAmharic)
+                            registerGloveMessage(translated)
+                            messageDao.insertMessage(MessageEntity(text = translated, isFromGlove = true))
+                            speechManager.speak(translated)
+                        }
+                    } else {
+                        // Incoming text is an already decoded text phrase
+                        val isAmharic = _translationLanguageAmharic.value
+                        val translated = text.tr(isAmharic)
+                        registerGloveMessage(translated)
+                        messageDao.insertMessage(MessageEntity(text = translated, isFromGlove = true))
+                        speechManager.speak(translated)
+                    }
                 }
             }
         }
@@ -221,14 +238,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun simulateGloveMessage() {
         viewModelScope.launch {
             val isAmharic = _translationLanguageAmharic.value
-            val texts = if (isAmharic) {
-                listOf("ሰላም፣ እንዴት ነህ?", "ዛሬ የአየር ሁኔታው በጣም ቆንጆ ነው።", "እኔ ሊሳን እባላለሁ።", "ጥሩ ስራ!")
-            } else {
-                listOf("Hello, how are you?", "The weather is very nice today.", "My name is Lisan.", "Great job!")
-            }
-            val text = texts.random()
+            val gestures = listOf(
+                "Victory", "Okay", "Stop", "I Love You", "Good Bye",
+                "What is wrong", "Why", "Come here", "Hope"
+            )
+            val gesture = gestures.random()
+            val text = gesture.tr(isAmharic)
             registerGloveMessage(text)
-            kotlinx.coroutines.delay(1000)
+            kotlinx.coroutines.delay(800)
             messageDao.insertMessage(MessageEntity(text = text, isFromGlove = true))
             speechManager.speak(text)
         }
@@ -254,6 +271,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         super.onCleared()
         silenceJob?.cancel()
         speechManager.destroy()
+        gestureClassifier.close()
         bluetoothManager.disconnect()
     }
 }

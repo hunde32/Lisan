@@ -53,20 +53,42 @@ The Android companion application provides real-time gesture telemetry, bidirect
 | Subsystem / Component | Status | Details |
 | :--- | :---: | :--- |
 | **Custom PCB Fabrication** | ✅ **Completed** | Schematics finalized in EasyEDA; physical copper PCB etched and verified. |
-| **Bare-Metal C Firmware** | ✅ **Completed** | Low-latency register-level drivers for ADC, I2C, MPU-6050, and UART fully implemented & compiled. |
-| **AI Translation Engine** | ✅ **Completed** | Google Gemini AI integration and local Room database dictionary engine fully functional. |
+| **Bare-Metal C Firmware** | ✅ **Completed** | Converted from Arduino to low-latency register-level C (ADC, TWI/I2C, MPU-6050, UART); verified compilation (`make all`). |
+| **AI Gesture Recognition** | ✅ **Completed** | Deep Neural Network, Random Forest & SVM trained on 8-feature glove dataset; 99.5% accuracy; standalone models in `model/`. |
+| **On-Device TFLite Inference**| ✅ **Completed** | Embedded normalization TFLite model running live in Android app with gesture stabilization & debouncing. |
 | **Android Companion App** | ✅ **Completed** | Jetpack Compose UI, Bluetooth SPP manager, Amharic TTS (`am-ET`) with acoustic echo cancellation. |
 | **Flex Sensors (5x Fingers)** | ⏳ **Pending** | 5x bidirectional bend sensors (thumb to pinky) to be acquired/fabricated. |
 | **PCB Component Soldering** | ⏳ **Pending** | Populating and soldering the ATmega32 socket, passives, regulator, charger, and modules onto the etched board. |
 | **Glove Mechanical Assembly** | ⏳ **Pending** | Attaching sensors to glove fingers and mounting the 3D-printed enclosure (`Final-Desgin.glb`). |
 
-> 📄 **Detailed Technical Report**: For complete electrical schematics, driver register configurations, and architectural gap analysis, see [`Embedded_System_Group_6_Project_Report.pdf`](Embedded_System_Group_6_Project_Report.pdf).
+> 📄 **Detailed Technical Report**: For complete electrical schematics, driver register configurations, and architectural gap analysis, see [`Embedded_System_Group_6_Project_Report.pdf`](Embedded_System_Group_6_Project_Report.pdf).  
+> 🔄 **Arduino to Bare-Metal Guide**: See [`firmware/ARDUINO_TO_BAREMETAL.md`](firmware/ARDUINO_TO_BAREMETAL.md) for direct register comparisons with Arduino HAL.  
+> 🧠 **Standalone Models & Training**: See [`model/README.md`](model/README.md) for pre-trained weights, training script, and Python usage.
+
+---
+
+## 🤖 Gesture Recognition Models (`model/`)
+
+For researchers and developers wanting the standalone gesture recognition models without compiling the mobile app or firmware, the repository includes a complete machine learning suite in `model/`:
+
+- **Input Features (8-D Vector)**:
+  - `THUMB, INDEX, MIDDLE, RING, LITTLE`: 10-bit flex sensor ADC readings (0–1023).
+  - `G1, G2, G3`: MPU6050 3-axis acceleration vector from register `0x3B` (`ACCEL_XOUT_H`..`Z`).
+- **Outputs**: 26 gesture classes with confidence probabilities.
+- **Model Formats Provided**:
+  - `glove_model.tflite` (18 KB): Optimized on-device model with **embedded Keras Normalization layer** (raw telemetry input, no manual client-side scaling needed).
+  - `glove_model.keras` & `glove_model.h5`: Full deep neural network weights (Test Accuracy: **99.55%**).
+  - `glove_rf_model.joblib`: Random Forest Classifier (Test Accuracy: **99.80%**).
+  - `glove_svm_model.joblib`: Support Vector Machine Classifier (Test Accuracy: **98.70%**).
+  - `dataset.csv`: 8-feature glove sensor dataset with 26 labeled gesture classes.
+  - `train_models.py`: End-to-end reproducible training and export pipeline.
+  - `labels.txt` & `labels.json`: Class index mapping (1 = Victory, 2 = Come here, 3 = Okay, 4 = Stop, etc.).
 
 ---
 
 ## 📂 Repository Architecture
 
-The project is structured into three primary domains:
+The project is structured into four primary domains:
 
 ```
 lisan/
@@ -75,23 +97,36 @@ lisan/
 │   ├── mechanical/            # 3D models (Final-Desgin.glb) for glove housing
 │   └── SCH_smartgloveredesigned_2026-09-14.json  # EasyEDA schematic design
 │
-├── firmware/                  # Embedded Systems (Bare-Metal C)
+├── firmware/                  # Embedded Systems (Bare-Metal C for ATmega32)
 │   ├── inc/                   # Header files (adc.h, i2c.h, mpu6050.h, uart.h)
 │   ├── src/                   # Driver implementations
-│   │   ├── adc.c              # 10-bit successive approximation ADC driver
-│   │   ├── i2c.c              # Hardware TWI/I2C master driver (100kHz)
-│   │   ├── mpu6050.c          # 6-DOF IMU initialization & burst register read
-│   │   ├── uart.c             # 9600-baud serial transmitter
-│   │   └── main.c             # 50ms periodic sampling and telemetry packet loop
+│   │   ├── adc.c              # 10-bit successive approximation ADC driver (PA0-PA4)
+│   │   ├── i2c.c              # Hardware TWI/I2C master driver (100kHz on PC0/PC1)
+│   │   ├── mpu6050.c          # 6-DOF IMU initialization & burst register read (0x3B)
+│   │   ├── uart.c             # 9600-baud USART serial transmitter (PD0/PD1)
+│   │   └── main.c             # 50ms periodic sampling and 8-feature telemetry stream loop
+│   ├── ARDUINO_TO_BAREMETAL.md# Comprehensive comparison with reference Arduino code
 │   └── Makefile               # AVR build automation script (avr-gcc / avrdude)
 │
+├── model/                     # Machine Learning & AI Gesture Recognition Models
+│   ├── glove_model.tflite     # Standalone TFLite model with embedded normalization
+│   ├── glove_model.keras      # Keras deep neural network model
+│   ├── glove_model.h5         # HDF5 model weights
+│   ├── glove_rf_model.joblib  # Scikit-learn Random Forest model
+│   ├── glove_svm_model.joblib # Scikit-learn SVM model
+│   ├── dataset.csv            # 8-feature glove sensor dataset
+│   ├── labels.txt & labels.json # 26 gesture class labels
+│   ├── train_models.py        # Python training and export script
+│   └── README.md              # Model documentation and quickstart code
+│
 ├── mobile-app/                # Android Companion Application
+│   ├── app/src/main/assets/   # Assets (glove_model.tflite, labels.txt)
 │   ├── app/src/main/java/com/example/
-│   │   ├── managers/          # GloveBluetoothManager.kt & SpeechManager.kt
-│   │   ├── viewmodel/         # MainViewModel.kt (reactive StateFlows)
-│   │   ├── ui/                # Jetpack Compose UI screens, themes, and translations
+│   │   ├── managers/          # GloveGestureClassifier.kt, GloveBluetoothManager.kt, SpeechManager.kt
+│   │   ├── viewmodel/         # MainViewModel.kt (reactive TFLite inference & StateFlows)
+│   │   ├── ui/                # Jetpack Compose UI screens, themes, and bilingual translations
 │   │   └── data/              # Room SQLite database (AppDatabase.kt)
-│   └── build.gradle.kts       # Android build config (Gemini AI, Room, Compose)
+│   └── build.gradle.kts       # Android build config (TensorFlow Lite, Compose, Room)
 │
 └── Embedded_System_Group_6_Project_Report.pdf # Comprehensive technical engineering report
 ```

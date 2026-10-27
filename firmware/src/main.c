@@ -22,9 +22,10 @@
     }
     MPU6050_Read_All(&ax, &ay, &az, &gx, &gy, &gz);
 
-    snprintf(buffer, sizeof(buffer), "%u,%u,%u,%u,%u,%d,%d,%d,%d,%d,%d\r\n",
-             flex[0], flex[1], flex[2], flex[3], flex[4], ax, ay, az, gx, gy,
-             gz);
+    // Output 8-channel telemetry stream matching ML model dataset:
+    // THUMB, INDEX, MIDDLE, RING, LITTLE, G1 (ax), G2 (ay), G3 (az)
+    snprintf(buffer, sizeof(buffer), "%u,%u,%u,%u,%u,%d,%d,%d\r\n",
+             flex[0], flex[1], flex[2], flex[3], flex[4], ax, ay, az);
     UART_TxString(buffer);
 
     _delay_ms(50);
